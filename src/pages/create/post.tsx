@@ -29,12 +29,9 @@ export default function createpost() {
 
     if (loading) return 'Creating...';
 
-    if (error) return `Creation error! ${error.message}`;
-
-    
+    if (error) return `Creation error! ${error.message}`;    
   return (
-    <>
-    
+    <>   
         <div>
         <input type="text" placeholder="Enter title" onChange={(i) => {
           setTitle(i.target.value);         
@@ -50,12 +47,7 @@ export default function createpost() {
           setImageUrl(i.target.value);         
           }}/>
         </div>
-    
-    
-    
-    <button onClick={() => createpost({ variables: { title: title1, body: body1, imageUrl: imageUrl1 } })} >Create</button>
-    
-      
+    <button onClick={() => createpost({ variables: { title: title1, body: body1, imageUrl: imageUrl1 } })} >Create post</button>
     </>
   )
 }

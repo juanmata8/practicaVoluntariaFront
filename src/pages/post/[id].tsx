@@ -4,20 +4,13 @@ import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
 import Link from 'next/link'
 import { GetServerSideProps, NextPage } from 'next'
-import { gql, useQuery } from '@apollo/client'
+import { gql, useMutation, useQuery } from '@apollo/client'
 import { getClientSSR } from '@/utils/client'
 import { comments, post, User } from '@/types'
 
+import { useEffect, useState } from 'react'
+
 const inter = Inter({ subsets: ['latin'] })
-
-const query = gql`
-query Query{
-  comments {
-    body
-
-  }
-}
-`
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
     const id = context.params?.id
@@ -31,6 +24,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       updatedAt
       comments {
         body
+        user {
+          email
+        }
       }
     }
   }
@@ -44,31 +40,81 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   props: { data }
   }
   }
-//   const getComments = () => {
-//     const { data, error } = useQuery<comments>(query);
-//     if (error) return `Error! ${error.message}`;
-//     return data?.comments;
-//   }
   
-const post:NextPage<{data:post}> = ({data}) => { 
+const post:NextPage<{data:post}> = ({data}) => {   
+  const CREATECOMMENT = gql`
+  mutation createComment($body:String!, $userEmail:String!, $postId:String!){
+    createComment(
+        input: {
+          body:$body
+          userEmail:$userEmail
+          postId:$postId
+        }
+      ){
+        body
+      }
+    } 
+  `;
+
+    const [body1, setBody] = useState<string>("");
+    const [userEmail1, setUserEmail] = useState<string>("");
+    const [postId1, setPostId] = useState<string>("");
+    const [newComments, setnewComments] = useState<{body:string, userEmail:string}[]>([])
+    const oldComments = data.post.comments.map(c => c.body)
+
+    const [createComment, {error}] = useMutation(CREATECOMMENT , {
+        onCompleted: (data) => {
+          // setnewComments([...newComments, {body:body1, userEmail: userEmail1}])
+          console.log(data) // the response
+        },
+        onError: (error) => {
+          console.log(error); // the error if that is the case
+        },
+        
+    });
     
+    const handleClick = () => {
+      createComment({ variables: { body: body1, userEmail: userEmail1, postId: postId1 } })
+      setnewComments([...newComments, {body:body1, userEmail: userEmail1}])
+    }
     
   return (
     <>    
      <div>{data.post.title}</div>
      <img src={data.post.imageUrl} />
-     <form action="/send-data-here" method="post">
-  <label>Body</label>
-  <input type="text"/>
-  <label>User Email</label>
-  <input type="text"/>
-  <label>postId</label>
-  <input type="text"/>
-  <button type="submit">Submit new comment</button>
-</form>
-<div>
-    
-</div>
+     <div dangerouslySetInnerHTML={{__html:data.post.body}}></div> 
+     <div>
+        <input type="text" placeholder="Enter title" onChange={(i) => {
+          setBody(i.target.value);         
+          }}/>
+        </div>
+        <div>
+        <input type="text" placeholder="Enter user email" onChange={(i) => {
+          setUserEmail(i.target.value);         
+          }}/>
+        </div>
+        <div>
+        <input type="text" placeholder="Enter post Id" onChange={(i) => {
+          setPostId(i.target.value);         
+          }}/>
+        </div>
+        <button onClick={() => handleClick()}>Submit new comment</button>      
+      <div>
+        {data.post.comments.map(c => <div className='post'>
+          <div>{c.body}</div>
+          <div>By user: {c.user.email}</div>
+          </div>)}
+      </div>
+      <div>
+      {
+      newComments.map((c) => 
+              
+        <div className='post'>
+        <div>{c.body}</div>
+        <div>By user: {c.userEmail}</div>
+     </div>
+      )}
+      </div>      
     </>
   )
 }
